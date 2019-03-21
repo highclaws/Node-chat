@@ -4,21 +4,26 @@ var express = require('express')
   , server = http.createServer(app)
   , io = require('socket.io').listen(server);
 
+
 server.listen(8080);
+
+app.use(express.static(__dirname + '/public'));
+
 
 // routing
 app.get('/', function (req, res) {
-  res.sendfile(__dirname + '/index.html');
+  res.sendfile(__dirname + '/views/index.html');
 });
 
 // usernames which are currently connected to the chat
+var users = [];
 var usernames = {};
-
 // rooms which are currently available in chat
 var rooms = ['room1','room2','room3'];
 
 io.sockets.on('connection', function (socket) {
-	
+
+
 	// when the client emits 'adduser', this listens and executes
 	socket.on('adduser', function(username){
 		// store the username in the socket session for this client
@@ -29,21 +34,42 @@ io.sockets.on('connection', function (socket) {
 		usernames[username] = username;
 		// send client to room 1
 		socket.join('room1');
-		// echo to client they've connected
+
+		users.push(username);
+
+		// var userInfo = new Object();
+		// userInfo.username = username;
+		// users.push(userInfo);
+		// store the room name in the socket session for this client
+	
+		
+		// io.sockets.in(socket.room).emit('updatec', userInfo);
+		io.sockets.in(socket.room).emit('updatec', users);
+
+
+
 		socket.emit('updatechat', 'SERVER', 'you have connected to room1');
+	
+		
 		// echo to room 1 that a person has connected to their room
 		socket.broadcast.to('room1').emit('updatechat', 'SERVER', username + ' has connected to this room');
 		socket.emit('updaterooms', rooms, 'room1');
+		
+		socket.emit('profil', username);
+
+
 	});
-	
+
 	// when the client emits 'sendchat', this listens and executes
 	socket.on('sendchat', function (data) {
 		// we tell the client to execute 'updatechat' with 2 parameters
 		io.sockets.in(socket.room).emit('updatechat', socket.username, data);
 	});
-	
+
 	socket.on('switchRoom', function(newroom){
+		// leave the current room (stored in session)
 		socket.leave(socket.room);
+		// join new room, received as function parameter
 		socket.join(newroom);
 		socket.emit('updatechat', 'SERVER', 'you have connected to '+ newroom);
 		// sent message to OLD room
@@ -53,7 +79,6 @@ io.sockets.on('connection', function (socket) {
 		socket.broadcast.to(newroom).emit('updatechat', 'SERVER', socket.username+' has joined this room');
 		socket.emit('updaterooms', rooms, newroom);
 	});
-	
 
 	// when the user disconnects.. perform this
 	socket.on('disconnect', function(){

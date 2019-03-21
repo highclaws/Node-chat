@@ -1,0 +1,170 @@
+<!DOCTYPE html><html class=''>
+	<head>
+
+		<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+		<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+		<link rel="stylesheet" type="text/css" href="/css/style.css"/>
+	</head>
+	<body>
+
+
+		<script src="/socket.io/socket.io.js"></script>
+
+		<script>
+			var socket = io.connect('http://localhost:8080');
+
+			//  connexion au server,
+
+			socket.on('connect', function(){
+			// appel le serveur avec la fonction function 'adduser' et ajoute un parametre a envoyé (value of prompt)
+
+			socket.emit('adduser', prompt("votre nom?"));
+
+			});
+			socket.on('profil', function (username) {
+				$('#profil').append(username);
+			});
+
+			//  affiche le nombre d'utilisateur sur serveur
+			socket.on('updatec', function (users) {
+
+			Object.keys(users).forEach(function(key) {
+			var val = users[key];
+
+
+			$('#updatec').append('<li  id="nested" class="contact delete"><div class="wrap"><span class="contact-status online"></span><img src="http://emilcarlsson.se/assets/louislitt.png" alt="" /><div class="meta"><p class="name">'+ val + '</p><p class="preview">You just got LITT up, Mike.</p></div></div></li>');
+
+			var seen = {};
+			$('li.delete').each(function() {
+				var txt = $(this).text();
+				if (seen[txt])
+				$(this).remove();
+				else
+				seen[txt] = true;
+			});
+
+			});
+			});
+
+			// listener, mis ajour des message du chat grace au serveur 
+			socket.on('updatechat', function (username, data) {
+				$('#conversation').append('<li class="replies"><img src="http://emilcarlsson.se/assets/harveyspecter.png" alt="" /><p> '+ data + ' : <strong>'+ username+'</strong></p></li><br>');
+			});
+
+
+
+			// listener, mis ajour des rooms du chat grace au serveur 
+			socket.on('updaterooms', function(rooms, current_room) {
+				$('#rooms').empty();
+				$.each(rooms, function(key, value) {
+				if(value == current_room){
+				$('#rooms').append('<span>' + value + '</span>');
+				}
+				else {
+				$('#rooms').append('<span><a href="#" onclick="switchRoom(\''+value+'\')">' + value + '</a></span>');
+				}
+				});
+			});
+			// listener, changer un rooms du chat grace au serveur 
+
+			function switchRoom(room){
+				socket.emit('switchRoom', room);
+			}
+
+			// chargement de la page
+			$(function()	{
+			// when the client clicks SEND
+				$('#datasend').click( function() {
+					var message = $('#data').val();
+					$('#data').val('');
+					// tell server to execute 'sendchat' and send along one parameter
+					socket.emit('sendchat', message);
+				});
+
+				// when the client hits ENTER on their keyboard
+				$('#data').keypress(function(e) {
+				if(e.which == 13) {
+					$(this).blur();
+					$('#datasend').focus().click();
+				}
+				});
+
+			});
+
+
+		</script>
+
+		<div id="frame">
+			<div id="sidepanel">
+				<div id="profile">
+					<div class="wrap">
+						<img id="profile-img" src="http://emilcarlsson.se/assets/mikeross.png" class="online" alt="" />
+						<p id="profil"> 
+							<!-- name profil -->
+						</p>
+					<i class="fa fa-chevron-down expand-button" aria-hidden="true"></i>
+				<div id="status-options">
+				<ul>
+					<li id="status-online" class="active"><span class="status-circle"></span> <p>Online</p></li>
+					<li id="status-away"><span class="status-circle"></span> <p>Away</p></li>
+					<li id="status-busy"><span class="status-circle"></span> <p>Busy</p></li>
+					<li id="status-offline"><span class="status-circle"></span> <p>Offline</p></li>
+				</ul>
+			</div>
+			<div id="expanded">
+				<label for="twitter"><i class="fa fa-facebook fa-fw" aria-hidden="true"></i></label>
+				<input name="twitter" type="text" value="mikeross" />
+				<label for="twitter"><i class="fa fa-twitter fa-fw" aria-hidden="true"></i></label>
+				<input name="twitter" type="text" value="ross81" />
+				<label for="twitter"><i class="fa fa-instagram fa-fw" aria-hidden="true"></i></label>
+				<input name="twitter" type="text" value="mike.ross" />
+			</div>
+		</div>
+	</div>
+		<div id="search">
+			<label for=""><i class="fa fa-search" aria-hidden="true"></i></label>
+			<input type="text" placeholder="Search contacts..." />
+		</div>
+
+		<div id="contacts">
+			<ul id="updatec">
+				<!-- list user -->
+			</ul>
+		</div>
+		<div id="bottom-bar">
+			<button id="addcontact"><i class="fa fa-user-plus fa-fw" aria-hidden="true"></i> <span>Add contact</span></button>
+			<button id="settings"><i class="fa fa-cog fa-fw" aria-hidden="true"></i> <span>Settings</span></button>
+		</div>
+	</div>
+		<div class="content">
+			<div class="contact-profile">
+				<p id="rooms">
+					<!-- room -->
+				</p>
+			</div>
+		<div class="messages">
+			<ul id="conversation">
+				<!-- conversation -->
+			</ul>
+		</div>
+		<div class="message-input">
+			<div class="wrap">
+				<input id="data" type="text"placeholder="Write your message..." />
+				<button class="submit" id="datasend" value="send"><i class="fa fa-paper-plane" aria-hidden="true"></i></button>
+
+			</div>
+		</div>
+	</div>
+</div>
+
+
+		<!------ Include the above in your HEAD tag ---------->
+		<link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700,300' rel='stylesheet' type='text/css'>
+		<script src="https://use.typekit.net/hoy3lrg.js"></script>
+		<link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css'><link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.2/css/font-awesome.min.css'>
+	</body>
+
+
+</html>
